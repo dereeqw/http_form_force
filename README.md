@@ -35,7 +35,7 @@ This toolkit helps security professionals, students, and researchers understand:
 
 ## 🛠 Features
 
-### http_force.py - Brute Force Tool
+### http_form_force.py - Brute Force Tool
 - Sequential credential testing (no multithreading)
 - Automatic form detection and parsing
 - Smart credential prioritization
@@ -66,8 +66,8 @@ This toolkit helps security professionals, students, and researchers understand:
 ## 🚀 Installation
 
 ```bash
-git clone https://github.com/yourusername/http-brute-force-lab.git
-cd http-brute-force-lab
+git clone https://github.com/dereeqw/http_form_force
+cd http_form_force
 
 # Install dependencies
 pip install -r requirements.txt
@@ -80,42 +80,42 @@ pip install -r requirements.txt
 ### Start the Lab Server
 
 ```bash
-# Using default credentials (admin:changeme123)
-python3 server.py
+# Using default credentials (admin:123456)
+python3 Server.py
 
 # Using custom credentials
 export LAB_USERNAME="testuser"
 export LAB_PASSWORD="testpass123"
-python3 server.py
+python3 Server.py
 ```
 
-The server will run on `http://127.0.0.1:5000`
+The server will run on `http://127.0.0.1:8080`
 
 ### Run the Brute Force Tool
 
 **Basic attack:**
 ```bash
-python3 http_force.py -u http://127.0.0.1:5000/login users.txt passwords.txt
+python3 http_form_force.py -u http://127.0.0.1:8080/login users.txt passwords.txt
 ```
 
 **With delay (stealth mode):**
 ```bash
-python3 http_force.py -u http://127.0.0.1:5000/login users.txt passwords.txt --delay 2.0
+python3 http_form_force.py -u http://127.0.0.1:8080/login users.txt passwords.txt --delay 2.0
 ```
 
 **Using combo file (user:pass format):**
 ```bash
-python3 http_force.py -u http://127.0.0.1:5000/login combos.txt --combo
+python3 http_form_force.py -u http://127.0.0.1:8080/login combos.txt --combo
 ```
 
 **With custom configuration:**
 ```bash
-python3 http_force.py -u http://127.0.0.1:5000/login users.txt passwords.txt --config custom.json
+python3 http_form_force.py -u http://127.0.0.1:8080/login users.txt passwords.txt --config custom.json
 ```
 
 **Verbose output:**
 ```bash
-python3 http_force.py -u http://127.0.0.1:5000/login users.txt passwords.txt -v
+python3 http_form_force.py -u http://127.0.0.1:8080/login users.txt passwords.txt -v
 ```
 
 ---
