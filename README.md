@@ -80,7 +80,7 @@ pip install -r requirements.txt
 ### Start the Lab Server
 
 ```bash
-# Using default credentials (admin:123456)
+# Using default credentials (admin:changeme123)
 python3 Server.py
 
 # Using custom credentials
@@ -95,27 +95,27 @@ The server will run on `http://127.0.0.1:8080`
 
 **Basic attack:**
 ```bash
-python3 http_form_force.py -u http://127.0.0.1:8080/login users.txt passwords.txt
+python3 http_form_force.py -u http://127.0.0.1:8080/ users.txt passwords.txt
 ```
 
 **With delay (stealth mode):**
 ```bash
-python3 http_form_force.py -u http://127.0.0.1:8080/login users.txt passwords.txt --delay 2.0
+python3 http_form_force.py -u http://127.0.0.1:8080/ users.txt passwords.txt --delay 2.0
 ```
 
 **Using combo file (user:pass format):**
 ```bash
-python3 http_form_force.py -u http://127.0.0.1:8080/login combos.txt --combo
+python3 http_form_force.py -u http://127.0.0.1:8080/ combos.txt --combo
 ```
 
 **With custom configuration:**
 ```bash
-python3 http_form_force.py -u http://127.0.0.1:8080/login users.txt passwords.txt --config custom.json
+python3 http_form_force.py -u http://127.0.0.1:8080/ users.txt passwords.txt --config custom.json
 ```
 
 **Verbose output:**
 ```bash
-python3 http_form_force.py -u http://127.0.0.1:8080/login users.txt passwords.txt -v
+python3 http_form_force.py -u http://127.0.0.1:8080/ users.txt passwords.txt -v
 ```
 
 ---
