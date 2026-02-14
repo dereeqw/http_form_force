@@ -1,0 +1,367 @@
+{
+  "_comment": "HTTP Brute Force ENHANCED - Configuración Optimizada v3.0",
+  "_version": "3.0.0",
+  "_description": "Configuración optimizada con evasión WAF/IDS y auto-throttling",
+  
+  "user_agent": "ROTATING",
+  "timeout": 15,
+  "max_retries": 3,
+  "backoff_factor": 0.5,
+  
+  "_attack_speed": {
+    "_comment": "Ajusta estos valores según tu objetivo",
+    "delay_between_attempts": 0.5,
+    "delay_randomization": 0.3,
+    "max_workers": 10
+  },
+  
+  "delay_between_attempts": 0.5,
+  "delay_randomization": 0.3,
+  "max_workers": 10,
+  "verify_ssl": true,
+  "follow_redirects": true,
+  
+  "_evasion_settings": {
+    "_comment": "Técnicas anti-detección - MANTENER ACTIVADAS",
+    "rotate_user_agents": true,
+    "use_realistic_headers": true,
+    "randomize_delays": true,
+    "session_persistence": true
+  },
+  
+  "rotate_user_agents": true,
+  "use_realistic_headers": true,
+  "randomize_delays": true,
+  "session_persistence": true,
+  
+  "_auto_throttling": {
+    "_comment": "Ajuste automático de velocidad si detecta problemas",
+    "enable_auto_throttling": true,
+    "rate_limit_detection": true,
+    "consecutive_errors_threshold": 5,
+    "throttle_backoff_multiplier": 2.0
+  },
+  
+  "enable_auto_throttling": true,
+  "rate_limit_detection": true,
+  "consecutive_errors_threshold": 5,
+  "throttle_backoff_multiplier": 2.0,
+  
+  "success_keywords": [
+    "dashboard",
+    "panel de control",
+    "control panel",
+    "logout",
+    "log out",
+    "cerrar sesión",
+    "sign out",
+    "bienvenido",
+    "bienvenida",
+    "welcome",
+    "welcome back",
+    "profile",
+    "perfil",
+    "mi cuenta",
+    "my account",
+    "admin panel",
+    "administration",
+    "administración",
+    "sesión iniciada",
+    "session started",
+    "logged in",
+    "successfully logged",
+    "login successful",
+    "authentication successful",
+    "autenticación exitosa",
+    "inicio exitoso",
+    "home",
+    "inicio",
+    "main page",
+    "página principal",
+    "user settings",
+    "configuración",
+    "settings",
+    "preferences",
+    "preferencias",
+    "notifications",
+    "notificaciones",
+    "messages",
+    "mensajes",
+    "inbox",
+    "bandeja de entrada",
+    "success",
+    "successful",
+    "exitoso",
+    "exitosa"
+  ],
+  
+  "fail_keywords": [
+    "invalid",
+    "inválido",
+    "error",
+    "incorrect",
+    "incorrecto",
+    "wrong",
+    "equivocado",
+    "try again",
+    "intenta de nuevo",
+    "intente nuevamente",
+    "falló",
+    "fallo",
+    "failed",
+    "failure",
+    "unauthorized",
+    "no autorizado",
+    "denied",
+    "denegado",
+    "access denied",
+    "acceso denegado",
+    "authentication failed",
+    "autenticación fallida",
+    "login failed",
+    "inicio de sesión fallido",
+    "invalid username",
+    "usuario inválido",
+    "invalid password",
+    "contraseña inválida",
+    "invalid credentials",
+    "credenciales inválidas",
+    "wrong username",
+    "usuario incorrecto",
+    "wrong password",
+    "contraseña incorrecta",
+    "incorrect username",
+    "incorrect password",
+    "bad credentials",
+    "malas credenciales",
+    "authentication error",
+    "error de autenticación",
+    "login error",
+    "error de inicio",
+    "could not authenticate",
+    "no se pudo autenticar",
+    "unable to login",
+    "no se puede iniciar sesión",
+    "please check",
+    "por favor verifica",
+    "verify your",
+    "verifica tu",
+    "try a different",
+    "prueba con otro",
+    "account not found",
+    "cuenta no encontrada",
+    "user not found",
+    "usuario no encontrado",
+    "does not exist",
+    "no existe",
+    "invalid combination",
+    "combinación inválida",
+    "forbidden",
+    "prohibido",
+    "not allowed",
+    "no permitido"
+  ],
+  
+  "block_keywords": [
+    "rate limit",
+    "rate-limit",
+    "ratelimit",
+    "too many",
+    "too many attempts",
+    "too many requests",
+    "demasiados intentos",
+    "blocked",
+    "bloqueado",
+    "banned",
+    "baneado",
+    "captcha",
+    "recaptcha",
+    "temporarily locked",
+    "temporalmente bloqueado",
+    "account locked",
+    "cuenta bloqueada",
+    "abuse",
+    "abuso",
+    "suspicious activity",
+    "actividad sospechosa",
+    "rate exceeded",
+    "límite excedido",
+    "throttled",
+    "slow down",
+    "please wait",
+    "por favor espera",
+    "try again later",
+    "intenta más tarde"
+  ],
+  
+  "user_field_names": [
+    "username",
+    "user",
+    "usuario",
+    "email",
+    "e-mail",
+    "correo",
+    "login",
+    "user_name",
+    "user-name",
+    "userid",
+    "user_id",
+    "user-id",
+    "login_name",
+    "login-name",
+    "loginname",
+    "account",
+    "cuenta",
+    "account_name",
+    "accountname",
+    "nombre",
+    "name",
+    "uname",
+    "uid",
+    "identifier",
+    "identificador"
+  ],
+  
+  "pass_field_names": [
+    "password",
+    "pass",
+    "pwd",
+    "passwd",
+    "passcode",
+    "pass_code",
+    "pass-code",
+    "contraseña",
+    "contrasena",
+    "clave",
+    "password1",
+    "password_1",
+    "user_password",
+    "userpassword",
+    "user-password",
+    "login_password",
+    "loginpassword",
+    "login-password"
+  ],
+  
+  "score_thresholds": {
+    "status_change": 2,
+    "length_change": 2,
+    "hash_change": 2,
+    "cookies_change": 4,
+    "success_keywords": 6,
+    "fail_keywords": -6,
+    "login_form_present": -8,
+    "min_success_score": 5
+  },
+  
+  "_presets": {
+    "_comment": "Perfiles predefinidos - copia estos valores a la config principal",
+    
+    "stealth_mode": {
+      "_description": "Máxima sigilo - lento pero difícil de detectar",
+      "delay_between_attempts": 5.0,
+      "delay_randomization": 0.5,
+      "max_workers": 1,
+      "timeout": 30,
+      "enable_auto_throttling": true,
+      "rotate_user_agents": true,
+      "randomize_delays": true
+    },
+    
+    "balanced_mode": {
+      "_description": "Balance entre velocidad y sigilo (RECOMENDADO)",
+      "delay_between_attempts": 0.5,
+      "delay_randomization": 0.3,
+      "max_workers": 10,
+      "timeout": 15,
+      "enable_auto_throttling": true,
+      "rotate_user_agents": true,
+      "randomize_delays": true
+    },
+    
+    "aggressive_mode": {
+      "_description": "Máxima velocidad - riesgo alto de detección",
+      "delay_between_attempts": 0.1,
+      "delay_randomization": 0.2,
+      "max_workers": 50,
+      "timeout": 10,
+      "enable_auto_throttling": true,
+      "rotate_user_agents": true,
+      "randomize_delays": true
+    },
+    
+    "local_lab_mode": {
+      "_description": "Para laboratorio local sin restricciones",
+      "delay_between_attempts": 0.0,
+      "delay_randomization": 0.0,
+      "max_workers": 100,
+      "timeout": 5,
+      "verify_ssl": false,
+      "enable_auto_throttling": false,
+      "rotate_user_agents": false,
+      "randomize_delays": false
+    }
+  },
+  
+  "_tuning_guide": {
+    "_comment": "Guía de ajuste fino para casos específicos",
+    
+    "if_too_many_false_positives": {
+      "action": "Incrementar min_success_score",
+      "example": {
+        "score_thresholds": {
+          "min_success_score": 8,
+          "success_keywords": 8,
+          "cookies_change": 6
+        }
+      }
+    },
+    
+    "if_too_many_false_negatives": {
+      "action": "Bajar min_success_score y aumentar pesos",
+      "example": {
+        "score_thresholds": {
+          "min_success_score": 3,
+          "status_change": 4,
+          "cookies_change": 6
+        }
+      }
+    },
+    
+    "if_getting_blocked_quickly": {
+      "action": "Aumentar delays y reducir workers",
+      "example": {
+        "delay_between_attempts": 3.0,
+        "delay_randomization": 0.5,
+        "max_workers": 3,
+        "consecutive_errors_threshold": 3
+      }
+    },
+    
+    "if_target_has_waf": {
+      "action": "Activar máxima evasión",
+      "example": {
+        "rotate_user_agents": true,
+        "use_realistic_headers": true,
+        "randomize_delays": true,
+        "delay_between_attempts": 2.0,
+        "delay_randomization": 0.5,
+        "max_workers": 5
+      }
+    }
+  },
+  
+  "_usage_examples": {
+    "example_1_basic": "python http_form_force.py -u https://target.com/login users.txt passwords.txt --config config_enhanced.json",
+    
+    "example_2_fast": "python http_form_force.py -u https://target.com/login users.txt passwords.txt --threads 20 --config config_enhanced.json",
+    
+    "example_3_follow": "python http_force.py -u https://target.com/login users.txt passwords.txt --threads 20 --follow --config config_enhanced.json",
+    
+    "example_4_stealth": "python http_force_enhanced.py -u https://target.com/login users.txt passwords.txt --delay 5.0 --threads 1 --config config_enhanced.json",
+    
+    "example_5_combo": "python http_force_enhanced.py -u https://target.com/login combos.txt --combo --threads 15 --config config_enhanced.json",
+    
+    "example_6_aggressive": "python http_force_enhanced.py -u https://target.com/login combos.txt --combo --threads 50 --delay 0.1 --follow --config config_enhanced.json"
+  }
+}
