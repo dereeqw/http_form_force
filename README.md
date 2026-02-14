@@ -226,11 +226,3 @@ THE AUTHORS ARE NOT RESPONSIBLE FOR:
 By using this software, you accept full responsibility for your actions.
 
 ---
-
-## 📞 Contact
-
-For educational inquiries or responsible disclosure of issues, please use GitHub issues.
-
----
-
-**Remember: With great power comes great responsibility. Use this knowledge to build better security, not to break it.**
