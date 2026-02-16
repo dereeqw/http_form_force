@@ -571,13 +571,31 @@ class FormAnalyzer:
                 if not field_name:
                     continue
                 
-                # Campo de usuario
-                if any(name in field_name.lower() for name in self.config['user_field_names']):
+                # Campo de usuario - usando word boundaries para evitar falsos positivos
+                field_name_lower = field_name.lower()
+                is_username_field = any(
+                    f"_{name}_" in f"_{field_name_lower}_" or 
+                    field_name_lower == name or
+                    field_name_lower.startswith(name + "_") or
+                    field_name_lower.endswith("_" + name)
+                    for name in self.config['user_field_names']
+                )
+                
+                if is_username_field:
                     form_data.username_field = field_name
                     self.logger.debug(f"Campo usuario encontrado: {field_name}")
                 
                 # Campo de password
-                elif field_type == 'password' or any(name in field_name.lower() for name in self.config['pass_field_names']):
+                elif field_type == 'password':
+                    form_data.password_field = field_name
+                    self.logger.debug(f"Campo password encontrado: {field_name}")
+                elif any(
+                    f"_{name}_" in f"_{field_name_lower}_" or 
+                    field_name_lower == name or
+                    field_name_lower.startswith(name + "_") or
+                    field_name_lower.endswith("_" + name)
+                    for name in self.config['pass_field_names']
+                ):
                     form_data.password_field = field_name
                     self.logger.debug(f"Campo password encontrado: {field_name}")
                 
@@ -585,8 +603,8 @@ class FormAnalyzer:
                 elif field_type == 'hidden':
                     form_data.hidden_fields[field_name] = field_value
                     
-                    # CSRF tokens
-                    if any(token in field_name.lower() for token in ['csrf', 'token', '_token', 'authenticity']):
+                    # CSRF tokens - mantener búsqueda más flexible para tokens
+                    if any(token in field_name_lower for token in ['csrf', 'token', '_token', 'authenticity']):
                         form_data.csrf_tokens[field_name] = field_value
                         self.logger.debug(f"CSRF token encontrado: {field_name}")
             
