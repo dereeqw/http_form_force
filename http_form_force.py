@@ -9,6 +9,7 @@ import hashlib
 import json
 import logging
 import random
+import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -571,13 +572,25 @@ class FormAnalyzer:
                 if not field_name:
                     continue
                 
-                # Campo de usuario
-                if any(name in field_name.lower() for name in self.config['user_field_names']):
+                # Campo de usuario - usando word boundaries con regex
+                field_name_lower = field_name.lower()
+                is_username_field = any(
+                    re.search(rf'\b{re.escape(name)}\b', field_name_lower)
+                    for name in self.config['user_field_names']
+                )
+                
+                if is_username_field:
                     form_data.username_field = field_name
                     self.logger.debug(f"Campo usuario encontrado: {field_name}")
                 
                 # Campo de password
-                elif field_type == 'password' or any(name in field_name.lower() for name in self.config['pass_field_names']):
+                elif field_type == 'password':
+                    form_data.password_field = field_name
+                    self.logger.debug(f"Campo password encontrado: {field_name}")
+                elif any(
+                    re.search(rf'\b{re.escape(name)}\b', field_name_lower)
+                    for name in self.config['pass_field_names']
+                ):
                     form_data.password_field = field_name
                     self.logger.debug(f"Campo password encontrado: {field_name}")
                 
@@ -585,8 +598,8 @@ class FormAnalyzer:
                 elif field_type == 'hidden':
                     form_data.hidden_fields[field_name] = field_value
                     
-                    # CSRF tokens
-                    if any(token in field_name.lower() for token in ['csrf', 'token', '_token', 'authenticity']):
+                    # CSRF tokens - mantener búsqueda más flexible para tokens
+                    if any(token in field_name_lower for token in ['csrf', 'token', '_token', 'authenticity']):
                         form_data.csrf_tokens[field_name] = field_value
                         self.logger.debug(f"CSRF token encontrado: {field_name}")
             
