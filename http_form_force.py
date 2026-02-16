@@ -9,6 +9,7 @@ import hashlib
 import json
 import logging
 import random
+import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -571,13 +572,10 @@ class FormAnalyzer:
                 if not field_name:
                     continue
                 
-                # Campo de usuario - usando word boundaries para evitar falsos positivos
+                # Campo de usuario - usando word boundaries con regex
                 field_name_lower = field_name.lower()
                 is_username_field = any(
-                    f"_{name}_" in f"_{field_name_lower}_" or 
-                    field_name_lower == name or
-                    field_name_lower.startswith(name + "_") or
-                    field_name_lower.endswith("_" + name)
+                    re.search(rf'\b{re.escape(name)}\b', field_name_lower)
                     for name in self.config['user_field_names']
                 )
                 
@@ -590,10 +588,7 @@ class FormAnalyzer:
                     form_data.password_field = field_name
                     self.logger.debug(f"Campo password encontrado: {field_name}")
                 elif any(
-                    f"_{name}_" in f"_{field_name_lower}_" or 
-                    field_name_lower == name or
-                    field_name_lower.startswith(name + "_") or
-                    field_name_lower.endswith("_" + name)
+                    re.search(rf'\b{re.escape(name)}\b', field_name_lower)
                     for name in self.config['pass_field_names']
                 ):
                     form_data.password_field = field_name
